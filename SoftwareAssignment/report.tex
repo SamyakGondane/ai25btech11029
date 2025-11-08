@@ -1,0 +1,248 @@
+\documentclass{report}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{gvv-book}
+\usepackage{gvv}
+\usepackage{booktabs}
+
+\title{\textbf{Software Assignment}}
+\author{Samyak Gondane}
+\date{November 2025}
+
+\begin{document}
+
+\maketitle
+
+\section*{SVD Summary (Strang's Video)}
+
+The video provides a detailed explanation of the \textbf{Singular Value Decomposition (SVD)}, a powerful matrix factorization technique. SVD expresses any matrix $A$ as the product of three matrices: $A = U\Sigma V^T$, where:
+
+\vspace{0.3cm}
+
+$U$ and $V$ are \textbf{orthogonal matrices} (their columns are orthonormal vectors).
+$\Sigma$ is a \textbf{diagonal matrix} containing the \textbf{singular values} (non-negative real numbers).
+
+\vspace{0.3cm}
+
+\textbf{Key Concepts}:\\
+\textbf{Goal of SVD}: To find orthonormal bases for the row space and column space of $A$, such that the transformation defined by $A$ maps one orthonormal basis to another, scaled by the singular values.\\
+\textbf{Null Spaces}: The null space and left null space are handled by adding zero singular values in $\Sigma$.
+
+\vspace{0.3cm}
+
+\textbf{Connection to Eigenvalues}: The singular values are the square roots of the eigenvalues of $A^T A$ and $A A^T$, which are symmetric and positive semi-definite matrices.
+
+\vspace{0.3cm}
+
+\textbf{Examples}: The video walks through two examples:\\
+A \textbf{non-singular matrix} (rank 2), where both $U$ and $V$ are computed.\\
+A \textbf{singular matrix} (rank 1), where only one singular value is non-zero, and the rest are zero.
+
+\vspace{0.3cm}
+
+\textbf{Applications}:
+SVD is useful in many areas, including data compression, image processing, and solving linear systems.
+It generalizes the idea of diagonalization for non-square matrices and is a central concept in linear algebra.
+
+\vspace{0.3cm}
+
+This decomposition is a unifying concept in linear algebra, bringing together ideas from eigenvalues, orthogonal matrices, and the four fundamental subspaces of a matrix.
+
+
+\newpage
+
+\section*{Explanation of the Implemented Algorithm}
+\subsection*{Mathematical Background}
+
+Given a grayscale image as a matrix $A\ \in\ R^{m \times n}$, the Singular Value Decomposition (SVD) expresses it as:
+
+\begin{align}
+    A = U \times \Sigma \times V^{T}
+\end{align}
+
+$\vec{U}$: m $\times$ m orthogonal matrix (left singular vectors)
+
+$\vec{\Sigma}$: m $\times$ n diagonal matrix with singular values $(\sigma_1 \geq \sigma_2 \geq ... \geq \sigma_T \geq 0)$
+
+$\vec{V^{T}}$: n $\times$ n transpose of orthogonal matrix (right singular vectors)\\
+
+To compress the image, we compute a low-rank approximation:
+
+\begin{align}
+    \vec{A_k} = U_k \times \Sigma_k \times V_k^{T}
+\end{align}
+
+$\vec{U_k}$: m $\times$ k matrix (top k left singular vectors)
+
+$\vec{\Sigma_k}$: k $\times$ k diagonal matrix (top k singular values)
+
+$\vec{V_k^{T}}$: k $\times$ n matrix (top k right singular vectors transposed)\\
+\\
+This reduces storage while preserving most visual content.
+\subsection*{Pseudocode for Power Iteration SVD}
+
+\textbf{Input}: $\vec{A}$ ($m \times n$ matrix), $k$ (number of singular values), $\text{max}\_\text{iter}$, $\text{tol}$\\
+\textbf{Output}: $\vec{S}$ (top k singular values), $\vec{U}$ (left vectors), $\vec{V}^T$ (right vectors transposed)
+
+\begin{enumerate}
+    \item Initialize $\vec{R} = \vec{A}$ (residual matrix)
+    \item For comp = $0$ to $K-1$:
+    \begin{enumerate}
+        \item Randomly initialize $\vec{v}$ (length $n$)
+        \item Repeat until convergence:
+        \begin{enumerate}
+            \item $\vec{u} = \vec{R} \times \vec{v}$
+            \item Normalize $\vec{u}$
+            \item $\vec{v} = \vec{R} \times \vec{u}$
+            \item Normalize $\vec{v}$
+            \item $\vec{\sigma} = \vec{u^T} \times \vec{R} \times \vec{v}$
+            \item Check convergence: $\norm{\sigma - prev_\sigma} < tol \times \sigma$
+        \end{enumerate}
+        \item Store $\sigma,\ \vec{u},\ \vec{v}$ in $\vec{S},\ \vec{U},\ \vec{V^T}$
+        \item Deflate $\vec{R}: \vec{R} = \vec{R} - \vec{\sigma} \times \vec{u} \times \vec{v^T}$
+    \end{enumerate}
+\end{enumerate}
+
+\subsubsection*{Input:}
+$\vec{A} \rightarrow m \times n$ matrix\\
+$\textbf{k} \rightarrow$ number of singular values to compute\\
+$\text{max}\_\text{iter} \rightarrow$ maximum number of iterations\\
+$\text{tol} \rightarrow$ convergence tolerance\\
+
+\subsubsection*{Output:}
+$\vec{S} \rightarrow$ list of top $k$ singular values\\
+$\vec{U} \rightarrow$ list of left singular vectors\\
+$\vec{V}_T \rightarrow$ list of right singular vectors (transposed)\\
+
+\subsubsection*{Initialize:}
+$\vec{R} \rightarrow A$ (residual matrix)\\
+$\vec{S} \rightarrow$ empty list\\
+$\vec{U} \rightarrow$ empty list\\
+$\vec{V}_T \rightarrow$ empty list\\
+
+\subsubsection*{For comp = 1 to k:}
+$\vec{v} \rightarrow$ random vector of length $n$\\
+$prev_\sigma \rightarrow 0$\\
+\\
+Repeat until convergence or \text{max}\_\text{iter}:\\
+$\vec{u} \rightarrow \vec{R} \times \vec{v}$\\
+$\vec{u} \rightarrow \frac{\vec{u}}{\norm{u}}$  (normalize)\\
+\\
+$\vec{v} \rightarrow \vec{R}^t \times \vec{u}$\\
+$\vec{v} \rightarrow \frac{\vec{v}}{\norm{v}}$  (normalize)\\
+$\sigma \rightarrow \vec{u}^t \times \vec{R} \times \vec{v}$\\
+\\
+If $\norm{\sigma - prev_\sigma} < tol \times \sigma$:\\
+break\\
+$prev_\sigma \rightarrow \sigma$\\
+\\
+Append $\sigma$ to $\vec{S}$\\
+Append $\vec{u}$ to $\vec{U}$\\
+Append $\vec{v}^t$ to $\vec{V}_T$\\
+\\
+$\vec{R} \rightarrow \vec{R} - \sigma \times \vec{u} \times \vec{v}^t$  (deflation step)\\
+Return $\vec{S}, \vec{U}, \vec{V}_T$\\
+
+
+\section*{Comparison of Algorithms}
+\subsection*{Considered Algorithms}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{p{4cm} p{6cm} p{6cm}}
+\toprule
+\textbf{Algorithm} & \textbf{Pros} & \textbf{Cons} \\
+\midrule
+\textbf{Power Iteration (used)} & Simple, memory-efficient, good for top-\(k\) & Slow convergence, not full SVD \\
+Golub–Reinsch & Accurate, full decomposition & Complex, heavy computation \\
+Jacobi & Good for small matrices & Inefficient for large images \\
+\bottomrule
+\end{tabular}
+\caption{Comparison of SVD algorithms}
+\end{table}
+
+
+\textbf{Chosen: Power Iteration}
+Why?
+
+\begin{enumerate}
+    \item Easy to implement in C
+    \item Focused on top-k singular values
+    \item Suitable for image compression where full SVD isn't needed
+    \item Allows deflation and iterative refinement
+\end{enumerate}
+
+\section*{Reconstructed Images for Different k}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.23\textwidth]{figs/einstein_k5.jpg}
+    \includegraphics[width=0.23\textwidth]{figs/einstein_k20.jpg}
+    \includegraphics[width=0.23\textwidth]{figs/einstein_k50.jpg}
+    \includegraphics[width=0.23\textwidth]{figs/einstein_k100.jpg}
+    \caption{Reconstructed images for $k = 5, 20, 50, 100$}
+\end{figure}
+
+\begin{table}[H]
+    \centering
+    \input{tables/Error analysis einstein}
+    \caption{Error analysis for Figure 1}
+    \label{tab:placeholder}
+\end{table}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.23\textwidth]{figs/greyscale_k5.jpg}
+    \includegraphics[width=0.23\textwidth]{figs/greyscale_k20.jpg}
+    \includegraphics[width=0.23\textwidth]{figs/greyscale_k50.jpg}
+    \includegraphics[width=0.23\textwidth]{figs/greyscale_k100.jpg}1
+    \caption{Reconstructed images for $k = 5, 20, 50, 100$}
+\end{figure}
+
+\begin{table}[H]
+    \centering
+    \input{tables/Error analysis greyscale}
+    \caption{Error analysis for Figure 2}
+    \label{tab:placeholder}
+\end{table}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.23\textwidth]{figs/globe_k5.jpg}
+    \includegraphics[width=0.23\textwidth]{figs/globe_k20.jpg}
+    \includegraphics[width=0.23\textwidth]{figs/globe_k50.jpg}
+    \includegraphics[width=0.23\textwidth]{figs/globe_k100.jpg}1
+    \caption{Reconstructed images for $k = 5, 20, 50, 100$}
+\end{figure}
+
+\begin{table}[H]
+    \centering
+    \input{tables/Error analysis globe}
+    \caption{Error analysis for Figure 3}
+    \label{tab:placeholder}
+\end{table}
+
+\section*{Error Analysis}
+
+Use Frobenius norm:
+
+$\norm{A - Ak}_F = \sqrt{(\Sigma (a_{ij} - a^k_{ij})^2)}$
+
+
+\section*{Trade-offs and Reflections}
+\subsection*{Trade-offs}
+\begin{enumerate}
+    \item Low k → High compression, poor image quality
+    \item High k → Better quality, less compression
+    \item Optimal k depends on acceptable error threshold
+\end{enumerate}
+
+\subsection*{Reflections}
+\begin{enumerate}
+    \item Full C implementation gave deeper control over memory and performance
+    \item Power iteration was intuitive and scalable
+    \item Modular design helped debug and extend easily
+    \item Writing to PGM format ensured compatibility with image viewers
+\end{enumerate}
+
+\end{document}
